@@ -1,0 +1,145 @@
+# Improved code in Python 3
+
+import psycopg2
+
+class CreateTable:
+    def __init__(self, db_name, user, password, host, port):
+        self.db_name = db_name
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+
+    def create_table(self):
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                dbname=self.db_name,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port
+            )
+            cur = conn.cursor()
+            cur.execute("CREATE TABLE produtosSupermercado (id SERIAL PRIMARY KEY, nomeProduto VARCHAR(60), lote VARCHAR(20), validade DATE, codigoBarras INT)")
+            conn.commit()
+            print("Tabela criada com sucesso!")
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None:
+                conn.close()
+
+class InsertData:
+    def __init__(self, db_name, user, password, host, port):
+        self.db_name = db_name
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+
+    def insert_data(self):
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                dbname=self.db_name,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port
+            )
+            cur = conn.cursor()
+            id = int(input("Digite o ID: "))
+            nomeProduto = input("Digite o nome do produto: ")
+            lote = input("Digite o lote: ")
+            validade = input("Digite a validade (formato: yyyy-MM-dd): ")
+            codigoBarras = int(input("Digite o código de barras: "))
+            cur.execute("INSERT INTO produtosSupermercado (id, nomeProduto, lote, validade, codigoBarras) VALUES (%s, %s, %s, %s, %s)", (id, nomeProduto, lote, validade, codigoBarras))
+            conn.commit()
+            print("Dados inseridos!")
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None:
+                conn.close()
+
+class ConsultData:
+    def __init__(self, db_name, user, password, host, port):
+        self.db_name = db_name
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+
+    def consult_data(self):
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                dbname=self.db_name,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port
+            )
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM produtosSupermercado")
+            rows = cur.fetchall()
+            for row in rows:
+                print("ID:", row[0])
+                print("Nome do Produto:", row[1])
+                print("Lote:", row[2])
+                print("Validade:", row[3])
+                print("Código de Barras:", row[4])
+                print("-----------------")
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None:
+                conn.close()
+
+class UpdateData:
+    def __init__(self, db_name, user, password, host, port):
+        self.db_name = db_name
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+
+    def update_data(self):
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                dbname=self.db_name,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port
+            )
+            cur = conn.cursor()
+            id = int(input("Digite o ID para ser modificado: "))
+            novoNomeProduto = input("Digite o novo nome do produto: ")
+            cur.execute("UPDATE produtosSupermercado SET nomeProduto = %s WHERE id = %s", (novoNomeProduto, id))
+            conn.commit()
+            print("Dados atualizados!")
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None:
+                conn.close()
+
+class DeleteData:
+    def __init__(self, db_name, user, password, host, port):
+        self.db_name = db_name
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+
+    def delete_data(self):
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                dbname=self.db_name,
+                user=self.user,
+                password=self.password,
+                host
