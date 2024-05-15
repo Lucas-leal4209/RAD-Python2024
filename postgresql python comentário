@@ -1,0 +1,174 @@
+# conexao.py
+import psycopg2
+
+# Função para criar uma conexão com o banco de dados
+def criar_conexao():
+    try:
+        # Tenta estabelecer uma conexão com o banco de dados usando os detalhes fornecidos
+        # dbname: o nome do banco de dados ao qual se conectar
+        # user: o nome de usuário com o qual se conectar
+        # password: a senha do usuário
+        # host: o nome do host (normalmente localhost para o servidor local)
+        # port: a porta na qual o servidor está escutando (5432 é a padrão para o PostgreSQL)
+        conexao = psycopg2.connect(
+            dbname="escola",
+            user="postgres",
+            password="senha",
+            host="localhost",
+            port="5432"
+        )
+        return conexao
+    except psycopg2.Error as e:
+        # Se a conexão falhar, imprime o erro e retorna None
+        print(f"Erro ao conectar ao banco de dados: {e}")
+        return None
+
+# Função para fechar a conexão com o banco de dados
+def fechar_conexao(conexao):
+    if conexao:
+        conexao.close()
+
+# modelo.py
+# Classe para representar um aluno
+class Aluno:
+    def __init__(self, id, nome, nota):
+        self.id = id
+        self.nome = nome
+        self.nota = nota
+
+# dao.py
+# Classe para interagir com a tabela de alunos no banco de dados
+class AlunoDAO:
+    def __init__(self, conexao):
+        self.conexao = conexao
+
+    # Função para criar a tabela de alunos
+    def criar_tabela(self):
+        cursor = self.conexao.cursor()
+        # Cria a tabela alunos se ela não existir
+        # A tabela tem três colunas: id, nome e nota
+        # id é uma chave primária que é gerada automaticamente pelo banco de dados
+        # nome é uma string de até 50 caracteres
+        # nota é um número decimal com precisão total de 4 dígitos e 2 dígitos após o ponto decimal
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS alunos (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(50) NOT NULL
+            );
+        """)
+        # Adiciona a coluna nota à tabela alunos se ela não existir
+        # A nota é inicializada como 0 por padrão
+        cursor.execute("""
+            ALTER TABLE alunos
+            ADD COLUMN IF NOT EXISTS nota DECIMAL(4, 2) NOT NULL DEFAULT 0;
+        """)
+        # Confirma as alterações no banco de dados
+        self.conexao.commit()
+
+    # Função para inserir um aluno na tabela
+    def inserir_aluno(self, aluno):
+        cursor = self.conexao.cursor()
+        # Insere um novo aluno na tabela alunos
+        # O nome e a nota do aluno são fornecidos como parâmetros
+        # A cláusula RETURNING id retorna o id gerado automaticamente para o novo aluno
+        cursor.execute("""
+            INSERT INTO alunos (nome, nota) VALUES (%s, %s) RETURNING id;
+        """, (aluno.nome, aluno.nota))
+        # Atualiza o id do objeto aluno com o id retornado pela consulta
+        aluno.id = cursor.fetchone()[0]
+        # Confirma as alterações no banco de dados
+        self.conexao.commit()
+
+    # Função para consultar todos os alunos na tabela
+    def consultar_alunos(self):
+        cursor = self.conexao.cursor()
+        # Executa uma consulta para selecionar todos os alunos na tabela alunos
+        cursor.execute("SELECT * FROM alunos;")
+        # Retorna uma lista de objetos Aluno, cada um representando uma linha na tabela alunos
+        return [Aluno(*row) for row in cursor.fetchall()]
+
+    # Função para atualizar a nota de um aluno
+    def atualizar_nota(self, aluno):
+        cursor = self.conexao.cursor()
+        # Atualiza a nota de um aluno específico na tabela alunos
+        # O id do aluno e a nova nota são fornecidos como parâmetros
+        cursor.execute("""
+            UPDATE alunos SET nota = %s WHERE id = %s;
+        """, (aluno.nota, aluno.id))
+        # Confirma as alterações no banco de dados
+        self.conexao.commit()
+
+    # Função para apagar a tabela de alunos
+    def apagar_tabela(self):
+        cursor = self.conexao.cursor()
+        # Apaga a tabela alunos se ela existir
+        # A cláusula CASCADE garante que todas as tabelas dependentes também sejam apagadas
+        cursor.execute("DROP TABLE IF EXISTS alunos CASCADE;")
+        # Confirma as alterações no banco de dados
+        self.conexao.commit()
+
+# main.py
+# Função principal que executa o programa
+def main():
+    # Cria uma conexão com o banco de dados
+    conexao = criar_conexao()
+    if conexao:
+        # Cria um objeto AlunoDAO para interagir com a tabela de alunos
+        aluno_dao = AlunoDAO(conexao)
+
+        # Loop principal do programa
+        while True:
+            # Imprime o menu de opções
+            print("Menu:")
+            print("1. Inserir aluno 2. Atualizar nota 3. Consultar alunos")
+            print("4. Apagar tabela 5. Criar tabela 6. Sair")
+
+            # Solicita ao usuário que escolha uma opção
+            opcao = input("Escolha uma opção: ")
+
+            # Executa a ação correspondente à opção escolhida
+            if opcao == "1":
+                # Opção 1: Inserir aluno
+                nome = input("Informe o nome do aluno: ")
+                nota = float(input("Informe a nota do aluno: "))
+                aluno = Aluno(None, nome, nota)
+                aluno_dao.inserir_aluno(aluno)
+                print("Aluno inserido com sucesso!")
+
+            elif opcao == "2":
+                # Opção 2: Atualizar nota
+                alunos = aluno_dao.consultar_alunos()
+                for aluno in alunos:
+                    print(f"ID: {aluno.id}, Nome: {aluno.nome}")
+                id = int(input("Informe o ID do aluno: "))
+                nota = float(input("Informe a nova nota do aluno: "))
+                aluno = Aluno(id, None, nota)
+                aluno_dao.atualizar_nota(aluno)
+                print("Nota atualizada com sucesso!")
+
+            elif opcao == "3":
+                # Opção 3: Consultar alunos
+                alunos = aluno_dao.consultar_alunos()
+                for aluno in alunos:
+                    print(f"ID: {aluno.id}, Nome: {aluno.nome}, Nota: {aluno.nota:.2f}")
+
+            elif opcao == "4":
+                # Opção 4: Apagar tabela
+                aluno_dao.apagar_tabela()
+                print("Tabela apagada com sucesso!")
+
+            elif opcao == "5":
+                # Opção 5: Criar tabela
+                aluno_dao.criar_tabela()
+                print("Tabela criada com sucesso!")
+
+            elif opcao == "6":
+                # Opção 6: Sair
+                break
+
+            else:
+                # Se a opção escolhida não for válida, imprime uma mensagem de erro
+                print("Opção inválida!")
+
+if __name__ == "__main__":
+    main()
