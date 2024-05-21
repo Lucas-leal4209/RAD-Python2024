@@ -1,0 +1,172 @@
+import psycopg2
+
+def criar_conexao():
+    try:
+        conexao = psycopg2.connect(
+            dbname="escola",
+            user="postgres",
+            password="senha",
+            host="localhost",
+            port="5432"
+        )
+        return conexao
+    except psycopg2.Error as e:
+        print(f"Erro ao conectar ao banco de dados: {e}")
+        return None
+
+def fechar_conexao(conexao):
+    if conexao:
+        conexao.close()
+
+def criar_tabelas():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS alunos (
+                    id SERIAL PRIMARY KEY,
+                    nome VARCHAR(50) NOT NULL
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS notas (
+                    id SERIAL PRIMARY KEY,
+                    aluno_id INTEGER NOT NULL,
+                    nota DECIMAL(4, 2) NOT NULL,
+                    FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
+                );
+            """)
+            conexao.commit()
+    except psycopg2.Error as e:
+        print(f"Erro ao criar tabelas: {e}")
+    finally:
+        fechar_conexao(conexao)
+    print('Criei as tabelas')
+
+def inserir_aluno():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            nome = input('Digite o nome do aluno: ')
+            cursor.execute("INSERT INTO alunos (nome) VALUES (%s) RETURNING id;", (nome,))
+            aluno_id = cursor.fetchone()[0]
+            conexao.commit()
+            print(f'Aluno inserido com sucesso! ID: {aluno_id}')
+    except psycopg2.Error as e:
+        print(f"Erro ao inserir aluno: {e}")
+    finally:
+        fechar_conexao(conexao)
+
+def inserir_nota():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            aluno_id = int(input('Digite o ID do aluno: '))
+            nota = float(input('Digite a nota do aluno: '))
+            cursor.execute("INSERT INTO notas (aluno_id, nota) VALUES (%s, %s) RETURNING id;", (aluno_id, nota))
+            nota_id = cursor.fetchone()[0]
+            conexao.commit()
+            print(f'Nota inserida com sucesso! ID da Nota: {nota_id}')
+    except psycopg2.Error as e:
+        print(f"Erro ao inserir nota: {e}")
+    finally:
+        fechar_conexao(conexao)
+
+def consultar_alunos():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            cursor.execute("SELECT * FROM alunos;")
+            alunos = cursor.fetchall()
+            for aluno in alunos:
+                print(f"ID: {aluno[0]}, Nome: {aluno[1]}")
+    except psycopg2.Error as e:
+        print(f"Erro ao consultar alunos: {e}")
+    finally:
+        fechar_conexao(conexao)
+    print('Consultei os alunos')
+
+def consultar_notas():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            aluno_id = int(input('Digite o ID do aluno: '))
+            cursor.execute("SELECT * FROM notas WHERE aluno_id = %s;", (aluno_id,))
+            notas = cursor.fetchall()
+            for nota in notas:
+                print(f"ID da Nota: {nota[0]}, Nota: {nota[2]:.2f}")
+    except psycopg2.Error as e:
+        print(f"Erro ao consultar notas: {e}")
+    finally:
+        fechar_conexao(conexao)
+    print('Consultei as notas')
+
+def alterar_nome_aluno():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            aluno_id = int(input('Digite o ID do aluno: '))
+            nome = input('Digite o novo nome do aluno: ')
+            cursor.execute("UPDATE alunos SET nome = %s WHERE id = %s;", (nome, aluno_id))
+            conexao.commit()
+            print('Nome do aluno atualizado com sucesso!')
+    except psycopg2.Error as e:
+        print(f"Erro ao alterar nome do aluno: {e}")
+    finally:
+        fechar_conexao(conexao)
+
+def alterar_nota():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            nota_id = int(input('Digite o ID da nota: '))
+            nova_nota = float(input('Digite a nova nota: '))
+            cursor.execute("UPDATE notas SET nota = %s WHERE id = %s;", (nova_nota, nota_id))
+            conexao.commit()
+            print('Nota atualizada com sucesso!')
+    except psycopg2.Error as e:
+        print(f"Erro ao alterar nota: {e}")
+    finally:
+        fechar_conexao(conexao)
+
+def menu():
+    while True:
+        opcao = input('''Programa de Cadastro e Consulta de Notas
+1 - Criar Tabelas
+2 - Inserir Aluno
+3 - Inserir Nota
+4 - Consultar Alunos
+5 - Consultar Notas
+6 - Alterar Nome do Aluno
+7 - Alterar Nota
+8 - Terminar Programa
+Digite uma opção: ''')
+        if opcao == '1':
+            criar_tabelas()
+        elif opcao == '2':
+            inserir_aluno()
+        elif opcao == '3':
+            inserir_nota()
+        elif opcao == '4':
+            consultar_alunos()
+        elif opcao == '5':
+            consultar_notas()
+        elif opcao == '6':
+            alterar_nome_aluno()
+        elif opcao == '7':
+            alterar_nota()
+        elif opcao == '8':
+            print('Fim da Execução do Programa.')
+            break
+        else:
+            print('Opção Inválida!\n')
+
+if __name__ == "__main__":
+    menu()
