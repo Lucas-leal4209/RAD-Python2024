@@ -1,3 +1,5 @@
+#Lucas Pedro Ferreira Leal Silva - 202204190141
+
 import psycopg2
 
 def criar_conexao():
@@ -17,7 +19,6 @@ def criar_conexao():
 def fechar_conexao(conexao):
     if conexao:
         conexao.close()
-
 def criar_tabelas():
     try:
         conexao = criar_conexao()
