@@ -1,3 +1,7 @@
+#Lucas Pedro Ferreira Leal Silva
+#202204190141
+
+
 import sqlite3
 
 def criar_conexao():
@@ -256,6 +260,46 @@ def excluir_nota():
     finally:
         fechar_conexao(conexao)
 
+def excluir():
+    while True:
+        tipo_exclusao = input('''\n\nOpções de Exclusão
+1 - Excluir Aluno
+2 - Excluir Nota de Aluno
+3 - Excluir Matéria
+4 - Voltar ao Menu Principal
+Digite uma opção: ''')
+        if tipo_exclusao == '1':
+            excluir_aluno()
+        elif tipo_exclusao == '2':
+            excluir_nota()
+        elif tipo_exclusao == '3':
+            excluir_materia()
+        elif tipo_exclusao == '4':
+            break
+        else:
+            print('Opção Inválida!\n')
+
+
+def excluir_materia():
+    try:
+        conexao = criar_conexao()
+        if conexao:
+            cursor = conexao.cursor()
+            cursor.execute("SELECT DISTINCT materia FROM notas;")
+            materias = cursor.fetchall()
+            print("Lista de Matérias:")
+            for materia in materias:
+                print(f"Matéria: {materia[0]}")
+            materia = input('Digite a matéria que deseja excluir: ')
+            cursor.execute("DELETE FROM notas WHERE materia = ?;", (materia,))
+            conexao.commit()
+            print(f'Todas as notas da matéria "{materia}" foram excluídas com sucesso!')
+    except sqlite3.Error as e:
+        print(f"Erro ao excluir matéria: {e}")
+    finally:
+        fechar_conexao(conexao)
+
+
 def menu():
     while True:
         opcao = input('''\n\nPrograma de Cadastro e Consulta de Notas
@@ -264,7 +308,7 @@ def menu():
 3 - Inserir Nota
 4 - Consultar Notas
 5 - Alterar Nota
-6 - Excluir Nota
+6 - Excluir
 7 - Terminar Programa
 Digite uma opção: ''')
         if opcao == '1':
@@ -278,7 +322,7 @@ Digite uma opção: ''')
         elif opcao == '5':
             alterar_nota()
         elif opcao == '6':
-            excluir_nota()
+            excluir()
         elif opcao == '7':
             print('Fim da Execução do Programa.')
             break
